@@ -1,5 +1,5 @@
 import React from 'react';
-import { Binary, Cpu, Terminal, CheckCircle2 } from 'lucide-react';
+import { Binary, Cpu, Terminal, Play, Trash2 } from 'lucide-react';
 
 export default function OutputPanel({
   activeTab,
@@ -10,6 +10,11 @@ export default function OutputPanel({
   asmError = '',
   consoleOutput = '',
   consoleError = '',
+  onRun,
+  isRunning = false,
+  stdinInput = '',
+  setStdinInput,
+  onClearConsole,
 }) {
   return (
     <div className="output-section">
@@ -43,13 +48,13 @@ export default function OutputPanel({
           >
             <Terminal size={13} />
             <span>Consola / Ejecución</span>
-            {consoleOutput && <span style={{ fontSize: '9px', background: 'var(--green-subtle)', color: 'var(--green-primary)', padding: '1px 5px', borderRadius: 8 }}>Compilado</span>}
+            {consoleOutput && <span style={{ fontSize: '9px', background: 'var(--green-subtle)', color: 'var(--green-primary)', padding: '1px 5px', borderRadius: 8 }}>Activo</span>}
           </button>
         </div>
       </div>
 
       {/* Contenido de cada pestaña con fondo transparente para dejar ver el logo de fondo */}
-      <div className="output-content">
+      <div className="output-content" style={{ display: 'flex', flexDirection: 'column' }}>
         {/* Pestaña: Código Intermedio (TAC) */}
         {activeTab === 'tac' && (
           (tacOutput || tacError) ? (
@@ -68,6 +73,7 @@ export default function OutputPanel({
                   alignItems: 'center',
                   gap: '8px'
                 }}>
+                  <span>⚠️</span>
                   <span>{tacError}</span>
                 </div>
               )}
@@ -110,6 +116,7 @@ export default function OutputPanel({
                   alignItems: 'center',
                   gap: '8px'
                 }}>
+                  <span>⚠️</span>
                   <span>{asmError}</span>
                 </div>
               )}
@@ -136,8 +143,8 @@ export default function OutputPanel({
 
         {/* Pestaña: Consola / Ejecución */}
         {activeTab === 'console' && (
-          (consoleOutput || consoleError) ? (
-            <div className="console-wrapper">
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', flex: 1 }}>
+            <div style={{ flex: 1, overflow: 'auto' }}>
               {consoleError && (
                 <div style={{
                   padding: '10px 14px',
@@ -153,39 +160,81 @@ export default function OutputPanel({
                   alignItems: 'center',
                   gap: '8px'
                 }}>
-                  <span>⚠️</span>
                   <span>{consoleError}</span>
                 </div>
               )}
-              {consoleOutput && (
-                <pre
-                  className="console-line"
-                  style={{
-                    color: '#34d399',
-                    fontSize: '14px',
-                    lineHeight: '23px',
-                    letterSpacing: '0.2px',
-                  }}
-                >
-                  {consoleOutput}
-                </pre>
+
+              {consoleOutput ? (
+                <div className="console-wrapper">
+                  <pre
+                    className="console-line"
+                    style={{
+                      color: '#34d399',
+                      fontSize: '14px',
+                      lineHeight: '23px',
+                      letterSpacing: '0.2px',
+                    }}
+                  >
+                    {consoleOutput}
+                  </pre>
+                </div>
+              ) : (
+                <div className="output-placeholder">
+                  <div className="output-placeholder-icon">
+                    <Terminal size={24} />
+                  </div>
+                  <div style={{ maxWidth: '380px' }}>
+                    <h4 style={{ color: '#ffffff', fontSize: '15px', marginBottom: '8px' }}>
+                      Consola de Ejecución
+                    </h4>
+                    <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: '20px' }}>
+                      Presiona el boton Ejecutar
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
-          ) : (
-            <div className="output-placeholder">
-              <div className="output-placeholder-icon">
-                <Terminal size={24} />
-              </div>
-              <div style={{ maxWidth: '380px' }}>
-                <h4 style={{ color: '#ffffff', fontSize: '15px', marginBottom: '8px' }}>
-                  Consola de Ensamblado y Ejecución
-                </h4>
-                <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: '20px' }}>
-                  Presiona el boton Ensamblar
-                </p>
-              </div>
+
+            {/* Barra de entrada interactiva para stdin (sentencias READ) */}
+            <div className="console-stdin-bar">
+              <span style={{ fontSize: '11px', color: 'var(--green-primary)', fontWeight: 600 }}>
+                stdin:
+              </span>
+              <input
+                type="text"
+                className="console-stdin-input"
+                value={stdinInput}
+                onChange={(e) => setStdinInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    onRun(stdinInput);
+                  }
+                }}
+                placeholder="Valores para leer y presiona Enter o Ejecutar"
+              />
+              <button
+                className="btn btn-primary"
+                style={{ padding: '4px 10px', fontSize: '11px' }}
+                onClick={() => onRun(stdinInput)}
+                disabled={isRunning}
+                title="Ejecutar ./salida con los valores de entrada"
+              >
+                <Play size={11} />
+                <span>{isRunning ? 'Corriendo...' : 'Enviar'}</span>
+              </button>
+              {consoleOutput && (
+                <button
+                  className="btn"
+                  style={{ padding: '4px 8px', fontSize: '11px' }}
+                  onClick={onClearConsole}
+                  title="Limpiar consola"
+                >
+                  <Trash2 size={12} />
+                </button>
+              )}
             </div>
-          )
+          </div>
         )}
       </div>
     </div>

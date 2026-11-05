@@ -26,10 +26,12 @@ export default function App() {
   const [asmError, setAsmError] = useState('');
   const [isGeneratingAsm, setIsGeneratingAsm] = useState(false);
 
-  // Estados para Ejecutable / Consola (Inciso 4)
+  // Estados para Ejecutable / Consola (Inciso 4 e Inciso 5)
   const [consoleOutput, setConsoleOutput] = useState('');
   const [consoleError, setConsoleError] = useState('');
   const [isAssembling, setIsAssembling] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [stdinInput, setStdinInput] = useState('');
 
   const isModified = code !== savedCode;
 
@@ -247,6 +249,69 @@ export default function App() {
     }
   };
 
+  // Ejecutar el binario ./salida con soporte para READ / WRITE (Inciso 5)
+  const handleRun = async (overrideInput = null) => {
+    setIsRunning(true);
+    setActiveOutputTab('console');
+    const inputToSend = overrideInput !== null ? overrideInput : stdinInput;
+
+    const timestamp = new Date().toLocaleTimeString();
+    const runHeader = `\n[${timestamp}] Ejecutando ./salida...`;
+
+    try {
+      const res = await fetch('/api/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          input: inputToSend,
+          autoBuild: true,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        let outputText = runHeader + '\n';
+        if (inputToSend && inputToSend.trim()) {
+          outputText += `> Entrada (stdin): ${inputToSend.trim()}\n`;
+        }
+        outputText += `> Salida del programa:\n`;
+        if (data.stdout && data.stdout.trim()) {
+          outputText += data.stdout;
+        } else {
+          outputText += `(El programa finalizó sin llamadas WRITE)\n`;
+        }
+        outputText += `----------------------------------------------------------------\n`;
+        outputText += `✓ Finalizado exitosamente en ${data.executionTime}s (exit code: ${data.exitCode})\n`;
+
+        setConsoleOutput((prev) => (prev ? prev + outputText : outputText));
+        setConsoleError('');
+        showToast('Ejecución completada con éxito');
+      } else {
+        let errText = runHeader + '\n';
+        if (inputToSend && inputToSend.trim()) {
+          errText += `> Entrada (stdin): ${inputToSend.trim()}\n`;
+        }
+        if (data.stdout) {
+          errText += `> Salida parcial:\n${data.stdout}\n`;
+        }
+        errText += `⚠️ Error: ${data.error || 'Error durante la ejecución del binario'}\n`;
+
+        setConsoleOutput((prev) => (prev ? prev + errText : errText));
+        setConsoleError(data.error || 'Error en la ejecución');
+        showToast(data.error || 'Fallo durante la ejecución', 'error');
+      }
+    } catch (err) {
+      showToast('Error de conexión al ejecutar', 'error');
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const handleClearConsole = () => {
+    setConsoleOutput('');
+    setConsoleError('');
+  };
+
   return (
     <div className="ide-container">
       {/* Barra de navegación superior */}
@@ -267,6 +332,8 @@ export default function App() {
         isGeneratingAsm={isGeneratingAsm}
         onAssemble={handleAssemble}
         isAssembling={isAssembling}
+        onRun={() => handleRun()}
+        isRunning={isRunning}
       />
 
       {/* Espacio de trabajo en una sola ventana (Editor + Paneles de Salida) */}
@@ -287,6 +354,11 @@ export default function App() {
           asmError={asmError}
           consoleOutput={consoleOutput}
           consoleError={consoleError}
+          onRun={handleRun}
+          isRunning={isRunning}
+          stdinInput={stdinInput}
+          setStdinInput={setStdinInput}
+          onClearConsole={handleClearConsole}
         />
       </main>
 

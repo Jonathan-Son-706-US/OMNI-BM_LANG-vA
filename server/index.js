@@ -320,6 +320,106 @@ app.post('/api/compile/executable', async (req, res) => {
 });
 
 // ------------------------------------------------------------------
+// INCISO 5: Ejecutar el Binario Creado (./salida)
+// ------------------------------------------------------------------
+
+function buildExecutable(code) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (typeof code === 'string' && code.trim().length > 0) {
+        await executeCompilerPipe(code);
+      }
+      exec('nasm -f elf32 salida.asm -o salida.o && ld -m elf_i386 salida.o -o salida', { cwd: ROOT_DIR }, (err, stdout, stderr) => {
+        if (err) return reject(new Error(`Fallo al ensamblar/enlazar: ${stderr || err.message}`));
+        resolve();
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+app.post('/api/run', async (req, res) => {
+  try {
+    const { input, code, autoBuild } = req.body;
+    const binPath = path.join(ROOT_DIR, 'salida');
+
+    // Si no existe el binario o se solicita autoBuild
+    if (!fs.existsSync(binPath) || autoBuild) {
+      try {
+        await buildExecutable(code);
+      } catch (buildErr) {
+        return res.status(400).json({
+          success: false,
+          error: `Error al preparar el ejecutable: ${buildErr.message}`,
+        });
+      }
+    }
+
+    const startTime = Date.now();
+    const child = spawn(binPath, [], { cwd: ROOT_DIR });
+
+    let stdoutData = '';
+    let stderrData = '';
+    let isTerminated = false;
+
+    // Timeout de seguridad: 6 segundos para evitar procesos colgados
+    const timer = setTimeout(() => {
+      isTerminated = true;
+      child.kill('SIGKILL');
+    }, 6000);
+
+    child.stdout.on('data', (chunk) => {
+      stdoutData += chunk.toString();
+    });
+
+    child.stderr.on('data', (chunk) => {
+      stderrData += chunk.toString();
+    });
+
+    child.on('error', (err) => {
+      clearTimeout(timer);
+      res.status(500).json({ success: false, error: `Error al ejecutar ./salida: ${err.message}` });
+    });
+
+    child.on('close', (exitCode) => {
+      clearTimeout(timer);
+      const executionTime = ((Date.now() - startTime) / 1000).toFixed(3);
+
+      if (isTerminated) {
+        return res.json({
+          success: false,
+          stdout: stdoutData,
+          stderr: stderrData,
+          error: 'Tiempo límite excedido (Timeout 6s). El programa posiblemente está esperando datos en READ o entró en un ciclo infinito. Ingresa los números en el campo "Entrada (stdin)" y vuelve a presionar Ejecutar.',
+          exitCode: 124,
+          executionTime,
+        });
+      }
+
+      res.json({
+        success: exitCode === 0,
+        stdout: stdoutData,
+        stderr: stderrData,
+        exitCode,
+        executionTime,
+      });
+    });
+
+    // Enviar valores de entrada a stdin para sentencias READ
+    if (typeof input === 'string' && input.trim().length > 0) {
+      const tokens = input.trim().split(/[\s,]+/).filter(Boolean);
+      const formattedInput = tokens.join('\n') + '\n';
+      child.stdin.write(formattedInput);
+    }
+    child.stdin.end();
+
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ------------------------------------------------------------------
 // Healthcheck
 // ------------------------------------------------------------------
 app.get('/api/status', (req, res) => {

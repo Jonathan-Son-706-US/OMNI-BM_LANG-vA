@@ -30,6 +30,8 @@ export default function Navbar({
   isGeneratingAsm,
   onAssemble,
   isAssembling,
+  onRun,
+  isRunning,
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -196,9 +198,15 @@ export default function Navbar({
             <Cpu size={14} />
             <span>{isAssembling ? 'Ensamblando...' : 'Ensamblar'}</span>
           </button>
-          <button className="btn" disabled style={{ opacity: 0.5 }} title="Inciso 5: Ejecutar binario">
+          <button
+            className="btn btn-primary"
+            onClick={onRun}
+            disabled={isRunning}
+            title="Ejecutar el binario ./salida (Inciso 5)"
+            style={{ fontWeight: 600 }}
+          >
             <Play size={14} />
-            <span>Ejecutar</span>
+            <span>{isRunning ? 'Ejecutando...' : 'Ejecutar'}</span>
           </button>
         </div>
       </div>

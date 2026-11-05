@@ -539,6 +539,36 @@ html, body, #root {
   letter-spacing: 0.2px;
 }
 
+/* Barra inferior interactiva de stdin para sentencias READ */
+.console-stdin-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background-color: var(--bg-surface-elevated);
+  border-top: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+.console-stdin-input {
+  flex: 1;
+  background-color: var(--bg-editor);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: #f1f5f9;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.console-stdin-input:focus {
+  border-color: var(--green-primary);
+  box-shadow: 0 0 8px var(--green-glow);
+}
+
 /* Modal minimalista de Integrantes */
 .modal-overlay {
   position: fixed;
