@@ -16,6 +16,21 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [serverOnline, setServerOnline] = useState(true);
 
+  // Estados para Código Intermedio (Inciso 2)
+  const [tacOutput, setTacOutput] = useState('');
+  const [tacError, setTacError] = useState('');
+  const [isGeneratingTac, setIsGeneratingTac] = useState(false);
+
+  // Estados para Assembler NASM (Inciso 3)
+  const [asmOutput, setAsmOutput] = useState('');
+  const [asmError, setAsmError] = useState('');
+  const [isGeneratingAsm, setIsGeneratingAsm] = useState(false);
+
+  // Estados para Ejecutable / Consola (Inciso 4)
+  const [consoleOutput, setConsoleOutput] = useState('');
+  const [consoleError, setConsoleError] = useState('');
+  const [isAssembling, setIsAssembling] = useState(false);
+
   const isModified = code !== savedCode;
 
   // Mostrar notificación toast temporal
@@ -135,6 +150,103 @@ export default function App() {
     showToast(`Archivo "${name}" cargado desde tu equipo.`);
   };
 
+  // Generar Código Intermedio (TAC) mediante tuberías (Inciso 2)
+  const handleGenerateTac = async () => {
+    if (!code.trim()) {
+      showToast('El editor está vacío', 'error');
+      return;
+    }
+    setIsGeneratingTac(true);
+    try {
+      const res = await fetch('/api/compile/tac', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTacOutput(data.tac);
+        setTacError('');
+        setActiveOutputTab('tac');
+        showToast('Código Intermedio (TAC) generado exitosamente');
+      } else {
+        setTacOutput(data.tac || '');
+        setTacError(data.error || 'Error sintáctico o léxico durante el análisis');
+        setActiveOutputTab('tac');
+        showToast(data.error || 'Error al compilar código TAC', 'error');
+      }
+    } catch (err) {
+      showToast('Error de conexión con el compilador', 'error');
+    } finally {
+      setIsGeneratingTac(false);
+    }
+  };
+
+  // Generar Código Assembler NASM (Inciso 3)
+  const handleGenerateAsm = async () => {
+    if (!code.trim()) {
+      showToast('El editor está vacío', 'error');
+      return;
+    }
+    setIsGeneratingAsm(true);
+    try {
+      const res = await fetch('/api/compile/asm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAsmOutput(data.asm);
+        setAsmError('');
+        if (data.tac) setTacOutput(data.tac);
+        setActiveOutputTab('asm');
+        showToast('Código Assembler NASM (salida.asm) generado exitosamente');
+      } else {
+        setAsmOutput('');
+        setAsmError(data.error || 'Error al generar código ensamblador');
+        setActiveOutputTab('asm');
+        showToast(data.error || 'Error al generar código NASM', 'error');
+      }
+    } catch (err) {
+      showToast('Error de conexión con el compilador', 'error');
+    } finally {
+      setIsGeneratingAsm(false);
+    }
+  };
+
+  // Ensamblar código ejecutable con NASM + LD (Inciso 4)
+  const handleAssemble = async () => {
+    if (!code.trim()) {
+      showToast('El editor está vacío', 'error');
+      return;
+    }
+    setIsAssembling(true);
+    try {
+      const res = await fetch('/api/compile/executable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setConsoleOutput(data.logs);
+        setConsoleError('');
+        setActiveOutputTab('console');
+        showToast('Ejecutable generado exitosamente con NASM y LD');
+      } else {
+        setConsoleOutput('');
+        setConsoleError(data.error || 'Error al ensamblar el ejecutable');
+        setActiveOutputTab('console');
+        showToast(data.error || 'Fallo durante el ensamblado o enlace', 'error');
+      }
+    } catch (err) {
+      showToast('Error de conexión al ensamblar', 'error');
+    } finally {
+      setIsAssembling(false);
+    }
+  };
+
   return (
     <div className="ide-container">
       {/* Barra de navegación superior */}
@@ -149,6 +261,12 @@ export default function App() {
         isSaving={isSaving}
         isModified={isModified}
         onOpenMembers={() => setIsMembersOpen(true)}
+        onGenerateTac={handleGenerateTac}
+        isGeneratingTac={isGeneratingTac}
+        onGenerateAsm={handleGenerateAsm}
+        isGeneratingAsm={isGeneratingAsm}
+        onAssemble={handleAssemble}
+        isAssembling={isAssembling}
       />
 
       {/* Espacio de trabajo en una sola ventana (Editor + Paneles de Salida) */}
@@ -163,6 +281,12 @@ export default function App() {
         <OutputPanel
           activeTab={activeOutputTab}
           onTabChange={setActiveOutputTab}
+          tacOutput={tacOutput}
+          tacError={tacError}
+          asmOutput={asmOutput}
+          asmError={asmError}
+          consoleOutput={consoleOutput}
+          consoleError={consoleError}
         />
       </main>
 

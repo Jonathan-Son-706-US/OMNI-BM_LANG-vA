@@ -24,6 +24,12 @@ export default function Navbar({
   isSaving,
   isModified,
   onOpenMembers,
+  onGenerateTac,
+  isGeneratingTac,
+  onGenerateAsm,
+  isGeneratingAsm,
+  onAssemble,
+  isAssembling,
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -158,21 +164,39 @@ export default function Navbar({
           onChange={handleFileUpload}
         />
 
-        {/* Botones de los siguientes Incisos (preparados para activarse) */}
-        <div className="btn-group" style={{ opacity: 0.65 }}>
-          <button className="btn" disabled title="Inciso 2: Generar Código Intermedio (Próximo paso)">
+        {/* Acciones de Compilación / Incisos */}
+        <div className="btn-group">
+          <button
+            className="btn btn-accent"
+            onClick={onGenerateTac}
+            disabled={isGeneratingTac}
+            title="Generar Código Intermedio TAC usando tuberías (Inciso 2)"
+            style={{ fontWeight: 600 }}
+          >
             <Binary size={14} />
-            <span>TAC</span>
+            <span>{isGeneratingTac ? 'Generando TAC...' : 'Generar TAC'}</span>
           </button>
-          <button className="btn" disabled title="Inciso 3: Generar Código Assembler NASM">
+          <button
+            className="btn btn-accent"
+            onClick={onGenerateAsm}
+            disabled={isGeneratingAsm}
+            title="Generar Código Assembler NASM salida.asm (Inciso 3)"
+            style={{ fontWeight: 600 }}
+          >
             <Cpu size={14} />
-            <span>NASM</span>
+            <span>{isGeneratingAsm ? 'Generando NASM...' : 'Generar NASM'}</span>
           </button>
-          <button className="btn" disabled title="Inciso 4: Ensamblar Ejecutable">
+          <button
+            className="btn btn-accent"
+            onClick={onAssemble}
+            disabled={isAssembling}
+            title="Generar código ejecutable con NASM y LD (Inciso 4)"
+            style={{ fontWeight: 600 }}
+          >
             <Cpu size={14} />
-            <span>Ensamblar</span>
+            <span>{isAssembling ? 'Ensamblando...' : 'Ensamblar'}</span>
           </button>
-          <button className="btn" disabled title="Inciso 5: Ejecutar binario">
+          <button className="btn" disabled style={{ opacity: 0.5 }} title="Inciso 5: Ejecutar binario">
             <Play size={14} />
             <span>Ejecutar</span>
           </button>

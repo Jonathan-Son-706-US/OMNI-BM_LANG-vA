@@ -525,12 +525,18 @@ html, body, #root {
 
 .code-output-block {
   font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 19px;
+  font-size: 14.5px;
+  line-height: 23px;
   color: #f1f5f9;
   white-space: pre;
   background-color: transparent;
   overflow: auto;
+}
+
+.tac-output-code {
+  font-size: 14.5px;
+  line-height: 23px;
+  letter-spacing: 0.2px;
 }
 
 /* Modal minimalista de Integrantes */

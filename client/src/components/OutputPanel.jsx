@@ -5,8 +5,11 @@ export default function OutputPanel({
   activeTab,
   onTabChange,
   tacOutput = '',
+  tacError = '',
   asmOutput = '',
+  asmError = '',
   consoleOutput = '',
+  consoleError = '',
 }) {
   return (
     <div className="output-section">
@@ -24,6 +27,7 @@ export default function OutputPanel({
           >
             <Binary size={13} />
             <span>Código Intermedio (TAC)</span>
+            {tacOutput && <span style={{ fontSize: '9px', background: 'var(--green-subtle)', color: 'var(--green-primary)', padding: '1px 5px', borderRadius: 8 }}>Generado</span>}
           </button>
           <button
             className={`tab-btn ${activeTab === 'asm' ? 'active' : ''}`}
@@ -31,6 +35,7 @@ export default function OutputPanel({
           >
             <Cpu size={13} />
             <span>Assembler NASM</span>
+            {asmOutput && <span style={{ fontSize: '9px', background: 'var(--green-subtle)', color: 'var(--green-primary)', padding: '1px 5px', borderRadius: 8 }}>Generado</span>}
           </button>
           <button
             className={`tab-btn ${activeTab === 'console' ? 'active' : ''}`}
@@ -38,6 +43,7 @@ export default function OutputPanel({
           >
             <Terminal size={13} />
             <span>Consola / Ejecución</span>
+            {consoleOutput && <span style={{ fontSize: '9px', background: 'var(--green-subtle)', color: 'var(--green-primary)', padding: '1px 5px', borderRadius: 8 }}>Compilado</span>}
           </button>
         </div>
       </div>
@@ -46,34 +52,41 @@ export default function OutputPanel({
       <div className="output-content">
         {/* Pestaña: Código Intermedio (TAC) */}
         {activeTab === 'tac' && (
-          tacOutput ? (
-            <pre className="code-output-block">{tacOutput}</pre>
+          (tacOutput || tacError) ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {tacError && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  color: '#f87171',
+                  fontSize: '12px',
+                  lineHeight: '18px',
+                  whiteSpace: 'pre-wrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <span>{tacError}</span>
+                </div>
+              )}
+              {tacOutput && (
+                <pre className="code-output-block tac-output-code">{tacOutput}</pre>
+              )}
+            </div>
           ) : (
             <div className="output-placeholder">
               <div className="output-placeholder-icon">
-                <Binary size={22} />
+                <Binary size={24} />
               </div>
               <div style={{ maxWidth: '380px' }}>
-                <h4 style={{ color: '#ffffff', fontSize: '14px', marginBottom: '6px' }}>
+                <h4 style={{ color: '#ffffff', fontSize: '15px', marginBottom: '8px' }}>
                   Código Intermedio (TAC)
                 </h4>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '18px' }}>
-                  El código de tres direcciones generado por el compilador mediante tuberías (<code>stdout</code>) se mostrará aquí con temporales (<code>t1, t2</code>) y saltos condicionales.
+                <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: '20px' }}>
+                  Presiona el boton generar TAC
                 </p>
-                <div
-                  style={{
-                    marginTop: '14px',
-                    display: 'inline-block',
-                    fontSize: '11px',
-                    color: 'var(--green-primary)',
-                    backgroundColor: 'var(--green-subtle)',
-                    padding: '4px 10px',
-                    borderRadius: '4px',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                  }}
-                >
-                  Preparado para Inciso 2
-                </div>
               </div>
             </div>
           )
@@ -81,34 +94,41 @@ export default function OutputPanel({
 
         {/* Pestaña: Assembler NASM */}
         {activeTab === 'asm' && (
-          asmOutput ? (
-            <pre className="code-output-block">{asmOutput}</pre>
+          (asmOutput || asmError) ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {asmError && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  color: '#f87171',
+                  fontSize: '12px',
+                  lineHeight: '18px',
+                  whiteSpace: 'pre-wrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <span>{asmError}</span>
+                </div>
+              )}
+              {asmOutput && (
+                <pre className="code-output-block">{asmOutput}</pre>
+              )}
+            </div>
           ) : (
             <div className="output-placeholder">
               <div className="output-placeholder-icon">
-                <Cpu size={22} />
+                <Cpu size={24} />
               </div>
               <div style={{ maxWidth: '380px' }}>
-                <h4 style={{ color: '#ffffff', fontSize: '14px', marginBottom: '6px' }}>
-                  Assembler NASM (x86 32-bit)
+                <h4 style={{ color: '#ffffff', fontSize: '15px', marginBottom: '8px' }}>
+                  Assembler NASM (salida.asm)
                 </h4>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '18px' }}>
-                  El código generado en <code>salida.asm</code> (secciones <code>.bss</code>, <code>.text</code>, directivas globales y rutinas de E/S <code>input</code>/<code>output</code>) se visualizará aquí.
+                <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: '20px' }}>
+                  Presiona el boton generar NASM
                 </p>
-                <div
-                  style={{
-                    marginTop: '14px',
-                    display: 'inline-block',
-                    fontSize: '11px',
-                    color: 'var(--green-primary)',
-                    backgroundColor: 'var(--green-subtle)',
-                    padding: '4px 10px',
-                    borderRadius: '4px',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                  }}
-                >
-                  Preparado para Inciso 3
-                </div>
               </div>
             </div>
           )
@@ -116,32 +136,53 @@ export default function OutputPanel({
 
         {/* Pestaña: Consola / Ejecución */}
         {activeTab === 'console' && (
-          consoleOutput ? (
+          (consoleOutput || consoleError) ? (
             <div className="console-wrapper">
-              <pre className="console-line">{consoleOutput}</pre>
+              {consoleError && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  color: '#f87171',
+                  fontSize: '12px',
+                  lineHeight: '18px',
+                  whiteSpace: 'pre-wrap',
+                  marginBottom: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <span>⚠️</span>
+                  <span>{consoleError}</span>
+                </div>
+              )}
+              {consoleOutput && (
+                <pre
+                  className="console-line"
+                  style={{
+                    color: '#34d399',
+                    fontSize: '14px',
+                    lineHeight: '23px',
+                    letterSpacing: '0.2px',
+                  }}
+                >
+                  {consoleOutput}
+                </pre>
+              )}
             </div>
           ) : (
-            <div className="console-wrapper">
-              <div className="console-line text-muted">[OMNI-BM_LANG Terminal vA]</div>
-              <div className="console-line text-muted">
-                Entorno Linux x86 listo para ensamblado, enlace y ejecución interactiva.
+            <div className="output-placeholder">
+              <div className="output-placeholder-icon">
+                <Terminal size={24} />
               </div>
-              <div className="console-line" style={{ marginTop: '8px', color: 'var(--green-primary)' }}>
-                ➜ Los comandos de compilación (nasm, ld) y la ejecución interactiva del binario se mostrarán aquí.
-              </div>
-              <div
-                style={{
-                  marginTop: '16px',
-                  alignSelf: 'flex-start',
-                  fontSize: '11px',
-                  color: 'var(--green-primary)',
-                  backgroundColor: 'var(--green-subtle)',
-                  padding: '4px 10px',
-                  borderRadius: '4px',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
-                }}
-              >
-                Preparado para Incisos 4 y 5
+              <div style={{ maxWidth: '380px' }}>
+                <h4 style={{ color: '#ffffff', fontSize: '15px', marginBottom: '8px' }}>
+                  Consola de Ensamblado y Ejecución
+                </h4>
+                <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: '20px' }}>
+                  Presiona el boton Ensamblar
+                </p>
               </div>
             </div>
           )
