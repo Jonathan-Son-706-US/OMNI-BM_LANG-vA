@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import EditorPanel from './components/EditorPanel';
 import OutputPanel from './components/OutputPanel';
 import MembersModal from './components/MembersModal';
+import StdinPromptModal from './components/StdinPromptModal';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function App() {
@@ -32,6 +33,11 @@ export default function App() {
   const [isAssembling, setIsAssembling] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [stdinInput, setStdinInput] = useState('');
+  const [isStdinModalOpen, setIsStdinModalOpen] = useState(false);
+
+  // Detección de sentencias READ en el código
+  const readMatches = code.match(/\bREAD\b/gi) || [];
+  const readCount = readMatches.length;
 
   const isModified = code !== savedCode;
 
@@ -273,6 +279,8 @@ export default function App() {
         let outputText = runHeader + '\n';
         if (inputToSend && inputToSend.trim()) {
           outputText += `> Entrada (stdin): ${inputToSend.trim()}\n`;
+        } else if (readCount > 0) {
+          outputText += `> Entrada (stdin): (vacío - READ tomó 0 por fin de entrada)\n`;
         }
         outputText += `> Salida del programa:\n`;
         if (data.stdout && data.stdout.trim()) {
@@ -290,6 +298,8 @@ export default function App() {
         let errText = runHeader + '\n';
         if (inputToSend && inputToSend.trim()) {
           errText += `> Entrada (stdin): ${inputToSend.trim()}\n`;
+        } else if (readCount > 0) {
+          errText += `> Entrada (stdin): (vacío)\n`;
         }
         if (data.stdout) {
           errText += `> Salida parcial:\n${data.stdout}\n`;
@@ -305,6 +315,19 @@ export default function App() {
     } finally {
       setIsRunning(false);
     }
+  };
+
+  // Disparador inteligente de ejecución: si el programa requiere READ y no hay entrada, solicita datos primero
+  const handleTriggerRun = (customInput = null) => {
+    if (customInput !== null) {
+      handleRun(customInput);
+      return;
+    }
+    if (readCount > 0 && !stdinInput.trim()) {
+      setIsStdinModalOpen(true);
+      return;
+    }
+    handleRun();
   };
 
   const handleClearConsole = () => {
@@ -332,7 +355,7 @@ export default function App() {
         isGeneratingAsm={isGeneratingAsm}
         onAssemble={handleAssemble}
         isAssembling={isAssembling}
-        onRun={() => handleRun()}
+        onRun={() => handleTriggerRun()}
         isRunning={isRunning}
       />
 
@@ -354,10 +377,11 @@ export default function App() {
           asmError={asmError}
           consoleOutput={consoleOutput}
           consoleError={consoleError}
-          onRun={handleRun}
+          onRun={(val) => handleRun(val)}
           isRunning={isRunning}
           stdinInput={stdinInput}
           setStdinInput={setStdinInput}
+          readCount={readCount}
           onClearConsole={handleClearConsole}
         />
       </main>
@@ -392,6 +416,19 @@ export default function App() {
       <MembersModal
         isOpen={isMembersOpen}
         onClose={() => setIsMembersOpen(false)}
+      />
+
+      {/* Modal para solicitar datos cuando hay sentencias READ */}
+      <StdinPromptModal
+        isOpen={isStdinModalOpen}
+        onClose={() => setIsStdinModalOpen(false)}
+        onSubmit={(val) => {
+          setIsStdinModalOpen(false);
+          setStdinInput(val);
+          handleRun(val);
+        }}
+        initialValue={stdinInput}
+        readCount={readCount}
       />
 
       {/* Notificaciones flotantes tipo Toast */}

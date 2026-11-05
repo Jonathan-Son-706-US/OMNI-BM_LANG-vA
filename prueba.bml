@@ -1,0 +1,14 @@
+MAIN{
+  DEC $x,$y,$z;
+  READ $x;
+  READ $y;
+  $z=>1+$x;
+  IF($x<$y){
+    $z=>$x+$y;
+  }
+  ELSE
+  {
+    $z=>0;
+  }
+ WRITE $z;
+}

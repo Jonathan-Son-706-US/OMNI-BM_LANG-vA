@@ -14,6 +14,7 @@ export default function OutputPanel({
   isRunning = false,
   stdinInput = '',
   setStdinInput,
+  readCount = 0,
   onClearConsole,
 }) {
   return (
@@ -73,7 +74,6 @@ export default function OutputPanel({
                   alignItems: 'center',
                   gap: '8px'
                 }}>
-                  <span>⚠️</span>
                   <span>{tacError}</span>
                 </div>
               )}
@@ -116,7 +116,6 @@ export default function OutputPanel({
                   alignItems: 'center',
                   gap: '8px'
                 }}>
-                  <span>⚠️</span>
                   <span>{asmError}</span>
                 </div>
               )}
@@ -197,8 +196,20 @@ export default function OutputPanel({
 
             {/* Barra de entrada interactiva para stdin (sentencias READ) */}
             <div className="console-stdin-bar">
-              <span style={{ fontSize: '11px', color: 'var(--green-primary)', fontWeight: 600 }}>
-                stdin:
+              <span style={{ fontSize: '11px', color: 'var(--green-primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span>stdin:</span>
+                {readCount > 0 && (
+                  <span style={{
+                    fontSize: '9.5px',
+                    background: 'var(--green-subtle)',
+                    color: 'var(--green-primary)',
+                    padding: '1px 6px',
+                    borderRadius: '4px',
+                    fontWeight: 500,
+                  }}>
+                    {readCount} {readCount === 1 ? 'READ' : 'READs'}
+                  </span>
+                )}
               </span>
               <input
                 type="text"
@@ -211,7 +222,11 @@ export default function OutputPanel({
                     onRun(stdinInput);
                   }
                 }}
-                placeholder="Valores para leer y presiona Enter o Ejecutar"
+                placeholder={
+                  readCount > 0
+                    ? `Ingresa ${readCount} ${readCount === 1 ? 'valor' : 'valores'} (ej: 15 25) y presiona Enter o Enviar`
+                    : "Valores para stdin y presiona Enter o Enviar"
+                }
               />
               <button
                 className="btn btn-primary"
