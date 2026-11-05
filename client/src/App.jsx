@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import EditorPanel from './components/EditorPanel';
 import OutputPanel from './components/OutputPanel';
@@ -33,7 +33,13 @@ export default function App() {
   const [isAssembling, setIsAssembling] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [stdinInput, setStdinInput] = useState('');
+
+  // WebSocket y Ejecución Interactiva con Pausa en READ
+  const wsRef = useRef(null);
   const [isStdinModalOpen, setIsStdinModalOpen] = useState(false);
+  const [promptVarName, setPromptVarName] = useState('');
+  const [promptReadIndex, setPromptReadIndex] = useState(1);
+  const [promptTotalReads, setPromptTotalReads] = useState(1);
 
   // Detección de sentencias READ en el código
   const readMatches = code.match(/\bREAD\b/gi) || [];
@@ -255,79 +261,101 @@ export default function App() {
     }
   };
 
-  // Ejecutar el binario ./salida con soporte para READ / WRITE (Inciso 5)
-  const handleRun = async (overrideInput = null) => {
+  // Ejecutar el binario ./salida de forma interactiva en tiempo real con WebSockets (Inciso 5)
+  const handleInteractiveRun = () => {
+    if (isRunning) return;
+
+    if (!code.trim()) {
+      showToast('El editor está vacío', 'error');
+      return;
+    }
+
     setIsRunning(true);
     setActiveOutputTab('console');
-    const inputToSend = overrideInput !== null ? overrideInput : stdinInput;
 
     const timestamp = new Date().toLocaleTimeString();
-    const runHeader = `\n[${timestamp}] Ejecutando ./salida...`;
+    const startMsg = `\n[${timestamp}] Iniciando ejecución de ./salida...\n`;
+    setConsoleOutput((prev) => (prev ? prev + startMsg : startMsg));
 
-    try {
-      const res = await fetch('/api/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code,
-          input: inputToSend,
-          autoBuild: true,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        let outputText = runHeader + '\n';
-        if (inputToSend && inputToSend.trim()) {
-          outputText += `> Entrada (stdin): ${inputToSend.trim()}\n`;
-        } else if (readCount > 0) {
-          outputText += `> Entrada (stdin): (vacío - READ tomó 0 por fin de entrada)\n`;
-        }
-        outputText += `> Salida del programa:\n`;
-        if (data.stdout && data.stdout.trim()) {
-          outputText += data.stdout;
-        } else {
-          outputText += `(El programa finalizó sin llamadas WRITE)\n`;
-        }
-        outputText += `----------------------------------------------------------------\n`;
-        outputText += `✓ Finalizado exitosamente en ${data.executionTime}s (exit code: ${data.exitCode})\n`;
+    // Cerrar WebSocket anterior si existía
+    if (wsRef.current) {
+      try {
+        wsRef.current.close();
+      } catch (e) {}
+    }
 
-        setConsoleOutput((prev) => (prev ? prev + outputText : outputText));
-        setConsoleError('');
-        showToast('Ejecución completada con éxito');
-      } else {
-        let errText = runHeader + '\n';
-        if (inputToSend && inputToSend.trim()) {
-          errText += `> Entrada (stdin): ${inputToSend.trim()}\n`;
-        } else if (readCount > 0) {
-          errText += `> Entrada (stdin): (vacío)\n`;
-        }
-        if (data.stdout) {
-          errText += `> Salida parcial:\n${data.stdout}\n`;
-        }
-        errText += `⚠️ Error: ${data.error || 'Error durante la ejecución del binario'}\n`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/run`;
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
 
-        setConsoleOutput((prev) => (prev ? prev + errText : errText));
-        setConsoleError(data.error || 'Error en la ejecución');
-        showToast(data.error || 'Fallo durante la ejecución', 'error');
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'start', code }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'stdout') {
+          setConsoleOutput((prev) => (prev ? prev + msg.data : msg.data));
+        } else if (msg.type === 'stderr') {
+          setConsoleOutput((prev) => (prev ? prev + msg.data : msg.data));
+        } else if (msg.type === 'need_input') {
+          setPromptVarName(msg.varName);
+          setPromptReadIndex(msg.readIndex);
+          setPromptTotalReads(msg.totalReads);
+          setIsStdinModalOpen(true);
+          setConsoleOutput((prev) => prev + `[READ encontrado] El programa se pausó esperando ${msg.varName}...\n`);
+        } else if (msg.type === 'exit') {
+          setIsRunning(false);
+          setIsStdinModalOpen(false);
+          let exitBanner = `----------------------------------------------------------------\n`;
+          if (msg.cancelled) {
+            exitBanner += `⏹ Proceso detenido por el usuario.\n`;
+          } else {
+            exitBanner += `✓ Finalizado exitosamente en ${msg.executionTime}s (exit code: ${msg.exitCode})\n`;
+          }
+          setConsoleOutput((prev) => (prev ? prev + exitBanner : exitBanner));
+          setConsoleError('');
+          showToast(msg.cancelled ? 'Ejecución detenida' : 'Ejecución completada con éxito');
+        } else if (msg.type === 'error') {
+          setIsRunning(false);
+          setIsStdinModalOpen(false);
+          setConsoleOutput((prev) => prev + `\nError: ${msg.error}\n`);
+          setConsoleError(msg.error);
+          showToast(msg.error, 'error');
+        }
+      } catch (e) {
+        console.error('Error parseando mensaje WS:', e);
       }
-    } catch (err) {
-      showToast('Error de conexión al ejecutar', 'error');
-    } finally {
+    };
+
+    ws.onerror = () => {
       setIsRunning(false);
+      setIsStdinModalOpen(false);
+      setConsoleError('Error de conexión WebSocket');
+      showToast('Error de conexión en tiempo real', 'error');
+    };
+
+    ws.onclose = () => {
+      setIsRunning(false);
+    };
+  };
+
+  const handleModalInputSubmit = (val) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'input', value: val }));
+      setConsoleOutput((prev) => prev + `> Entrada ingresada para ${promptVarName}: ${val}\n`);
+      setIsStdinModalOpen(false);
     }
   };
 
-  // Disparador inteligente de ejecución: si el programa requiere READ y no hay entrada, solicita datos primero
-  const handleTriggerRun = (customInput = null) => {
-    if (customInput !== null) {
-      handleRun(customInput);
-      return;
+  const handleCancelRun = () => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'cancel' }));
     }
-    if (readCount > 0 && !stdinInput.trim()) {
-      setIsStdinModalOpen(true);
-      return;
-    }
-    handleRun();
+    setIsStdinModalOpen(false);
+    setIsRunning(false);
   };
 
   const handleClearConsole = () => {
@@ -355,7 +383,7 @@ export default function App() {
         isGeneratingAsm={isGeneratingAsm}
         onAssemble={handleAssemble}
         isAssembling={isAssembling}
-        onRun={() => handleTriggerRun()}
+        onRun={handleInteractiveRun}
         isRunning={isRunning}
       />
 
@@ -377,7 +405,13 @@ export default function App() {
           asmError={asmError}
           consoleOutput={consoleOutput}
           consoleError={consoleError}
-          onRun={(val) => handleRun(val)}
+          onRun={(val) => {
+            if (isStdinModalOpen && val) {
+              handleModalInputSubmit(val);
+            } else {
+              handleInteractiveRun();
+            }
+          }}
           isRunning={isRunning}
           stdinInput={stdinInput}
           setStdinInput={setStdinInput}
@@ -418,17 +452,15 @@ export default function App() {
         onClose={() => setIsMembersOpen(false)}
       />
 
-      {/* Modal para solicitar datos cuando hay sentencias READ */}
+      {/* Modal para solicitar datos en tiempo real cuando encuentra READ */}
       <StdinPromptModal
         isOpen={isStdinModalOpen}
         onClose={() => setIsStdinModalOpen(false)}
-        onSubmit={(val) => {
-          setIsStdinModalOpen(false);
-          setStdinInput(val);
-          handleRun(val);
-        }}
-        initialValue={stdinInput}
-        readCount={readCount}
+        onSubmit={handleModalInputSubmit}
+        onCancelRun={handleCancelRun}
+        varName={promptVarName}
+        readIndex={promptReadIndex}
+        totalReads={promptTotalReads}
       />
 
       {/* Notificaciones flotantes tipo Toast */}

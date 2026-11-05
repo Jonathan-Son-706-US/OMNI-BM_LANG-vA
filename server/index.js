@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const { WebSocketServer } = require('ws');
 const { exec, spawn } = require('child_process');
 
 const app = express();
@@ -420,12 +422,158 @@ app.post('/api/run', async (req, res) => {
 });
 
 // ------------------------------------------------------------------
+// WebSocket: Ejecución Interactiva en Tiempo Real con Pausa en READ
+// ------------------------------------------------------------------
+
+function isWaitingForStdin(pid) {
+  try {
+    const syscall = fs.readFileSync(`/proc/${pid}/syscall`, 'utf8').trim();
+    const parts = syscall.split(' ');
+    // Linux x86 sys_read es syscall 3, primer argumento es fd 0 (0x0 o 0)
+    return parts[0] === '3' && (parts[1] === '0x0' || parts[1] === '0');
+  } catch (e) {
+    return false;
+  }
+}
+
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server, path: '/ws/run' });
+
+wss.on('connection', (ws) => {
+  let child = null;
+  let checkInterval = null;
+  let watchdogTimer = null;
+  let readVars = [];
+  let readCount = 0;
+  let readIndex = 0;
+  let isWaitingInput = false;
+  let startTime = Date.now();
+
+  const resetWatchdog = (seconds = 25) => {
+    if (watchdogTimer) clearTimeout(watchdogTimer);
+    watchdogTimer = setTimeout(() => {
+      if (child && !child.killed) {
+        try {
+          ws.send(JSON.stringify({
+            type: 'error',
+            error: `Tiempo límite excedido (Timeout ${seconds}s). El proceso fue terminado.`,
+          }));
+        } catch (e) {}
+        child.kill('SIGKILL');
+      }
+    }, seconds * 1000);
+  };
+
+  const cleanup = () => {
+    if (checkInterval) {
+      clearInterval(checkInterval);
+      checkInterval = null;
+    }
+    if (watchdogTimer) {
+      clearTimeout(watchdogTimer);
+      watchdogTimer = null;
+    }
+    if (child && !child.killed) {
+      try { child.kill('SIGKILL'); } catch (e) {}
+    }
+  };
+
+  ws.on('message', async (rawMsg) => {
+    try {
+      const msg = JSON.parse(rawMsg.toString());
+
+      if (msg.type === 'start') {
+        const { code } = msg;
+
+        // Extraer nombres de las variables en las instrucciones READ
+        if (typeof code === 'string') {
+          const matches = [...code.matchAll(/\bREAD\s+\$([a-zA-Z0-9_]+)/gi)];
+          readVars = matches.map((m) => '$' + m[1]);
+          readCount = readVars.length;
+        }
+
+        // Compilar ejecutable si es necesario
+        try {
+          await buildExecutable(code);
+        } catch (buildErr) {
+          ws.send(JSON.stringify({
+            type: 'error',
+            error: `Error al preparar ejecutable: ${buildErr.message}`,
+          }));
+          return;
+        }
+
+        const binPath = path.join(ROOT_DIR, 'salida');
+        startTime = Date.now();
+        child = spawn(binPath, [], { cwd: ROOT_DIR });
+        resetWatchdog(25);
+
+        child.stdout.on('data', (chunk) => {
+          ws.send(JSON.stringify({ type: 'stdout', data: chunk.toString() }));
+        });
+
+        child.stderr.on('data', (chunk) => {
+          ws.send(JSON.stringify({ type: 'stderr', data: chunk.toString() }));
+        });
+
+        child.on('error', (err) => {
+          cleanup();
+          ws.send(JSON.stringify({ type: 'error', error: `Fallo al iniciar ./salida: ${err.message}` }));
+        });
+
+        child.on('close', (exitCode) => {
+          cleanup();
+          const executionTime = ((Date.now() - startTime) / 1000).toFixed(3);
+          ws.send(JSON.stringify({
+            type: 'exit',
+            exitCode: exitCode !== null ? exitCode : 0,
+            executionTime,
+          }));
+        });
+
+        // Bucle de sondeo para detectar cuando ./salida entra en sys_read
+        checkInterval = setInterval(() => {
+          if (!child || child.killed) return;
+          if (!isWaitingInput && isWaitingForStdin(child.pid)) {
+            isWaitingInput = true;
+            const currentVar = readVars[readIndex] || (readCount > 0 ? `variable #${readIndex + 1}` : '$valor');
+            ws.send(JSON.stringify({
+              type: 'need_input',
+              varName: currentVar,
+              readIndex: readIndex + 1,
+              totalReads: readCount,
+            }));
+          }
+        }, 35);
+
+      } else if (msg.type === 'input') {
+        const val = String(msg.value || '').trim();
+        if (child && !child.killed && isWaitingInput) {
+          isWaitingInput = false;
+          readIndex++;
+          resetWatchdog(25);
+          child.stdin.write(val + '\n');
+        }
+      } else if (msg.type === 'cancel') {
+        cleanup();
+        ws.send(JSON.stringify({ type: 'exit', exitCode: 130, cancelled: true }));
+      }
+    } catch (e) {
+      ws.send(JSON.stringify({ type: 'error', error: e.message }));
+    }
+  });
+
+  ws.on('close', cleanup);
+  ws.on('error', cleanup);
+});
+
+// ------------------------------------------------------------------
 // Healthcheck
 // ------------------------------------------------------------------
 app.get('/api/status', (req, res) => {
   res.json({ status: 'ok', service: 'OMNI-BM_LANG Server' });
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`[OMNI-BM_LANG Server] escuchando en http://localhost:${PORT}`);
 });

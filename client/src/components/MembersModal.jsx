@@ -4,11 +4,11 @@ import { Users, X } from 'lucide-react';
 export default function MembersModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
-  // Lista de integrantes (plantilla lista para ser actualizada con los datos finales)
   const integrantes = [
-    { nombre: 'Integrante 1 (Pendiente)', carne: '202X-XXXXX' },
-    { nombre: 'Integrante 2 (Pendiente)', carne: '202X-XXXXX' },
-    { nombre: 'Integrante 3 (Pendiente)', carne: '202X-XXXXX' },
+    { nombre: 'Abner Esaú Ambrocio Lima', carne: '202408028' },
+    { nombre: 'Diego Jonathan Utuc Son', carne: '202408047' },
+    { nombre: 'Jair Michael Otoniel Castillo Valdez', carne: '202408014' },
+    { nombre: 'Diego Javier Jiménez Pineda', carne: '202408026' },
   ];
 
   return (
@@ -30,7 +30,7 @@ export default function MembersModal({ isOpen, onClose }) {
 
         <div className="modal-body">
           <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-            Compilador de Alto Nivel <strong>OMNI-BM_LANG</strong> - Compiladores I
+            Proyecto Compiladores <strong>OMNI-BM_LANG</strong> - Compiladores I
           </p>
 
           {integrantes.map((m, idx) => (
