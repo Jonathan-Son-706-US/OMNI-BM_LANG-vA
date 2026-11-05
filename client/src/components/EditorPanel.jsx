@@ -11,18 +11,18 @@ export default function EditorPanel({
   const textareaRef = useRef(null);
   const lineNumbersRef = useRef(null);
 
-  // Calcular número de líneas
+  // Conteo de lineas
   const lines = code.split('\n');
   const lineCount = lines.length;
 
-  // Sincronizar scroll vertical entre números de línea y textarea
+  // Sincronizar scroll entre numeros de linea y editor
   const handleScroll = () => {
     if (textareaRef.current && lineNumbersRef.current) {
       lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
     }
   };
 
-  // Manejo de teclas especiales (Tab, Enter con auto-indentación, atajo Ctrl+S)
+  // Manejo de atajos y sangria automatica
   const handleKeyDown = (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
@@ -40,7 +40,7 @@ export default function EditorPanel({
       const newCode = code.substring(0, start) + '    ' + code.substring(end);
       onChange(newCode);
 
-      // Reposicionar cursor tras el nuevo render
+      // Reposicionar cursor
       requestAnimationFrame(() => {
         textarea.selectionStart = textarea.selectionEnd = start + 4;
       });
@@ -53,7 +53,7 @@ export default function EditorPanel({
       const match = currentLine.match(/^\s+/);
       const indent = match ? match[0] : '';
 
-      // Si la línea actual termina con '{', agregar indent adicional
+      // Sangria adicional tras abrir llave
       const extraIndent = currentLine.trim().endsWith('{') ? '    ' : '';
 
       if (indent || extraIndent) {
@@ -71,12 +71,12 @@ export default function EditorPanel({
 
   return (
     <div className="editor-section">
-      {/* Marca de agua de fondo con transparencia reducida en el editor */}
+      {/* Logo de fondo */}
       <div className="editor-watermark" aria-hidden="true">
         <img src="/logo1.avif" alt="Fondo Editor" />
       </div>
 
-      {/* Cabecera del editor */}
+      {/* Encabezado del editor */}
       <div className="panel-header" style={{ position: 'relative', zIndex: 2 }}>
         <div className="panel-title">
           <FileCode2 size={14} color="var(--green-primary)" />
@@ -94,7 +94,7 @@ export default function EditorPanel({
         </div>
       </div>
 
-      {/* Área del editor con números de línea */}
+      {/* Area de edicion */}
       <div className="editor-wrapper">
         <div className="line-numbers" ref={lineNumbersRef}>
           {Array.from({ length: lineCount }, (_, i) => (
@@ -113,7 +113,7 @@ export default function EditorPanel({
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
-          placeholder="Escribe aquí tu código en lenguaje .bml (ej: MAIN { DEC $x; $x => 10; WRITE $x; })"
+          placeholder="Escribe el codigo en lenguaje BML..."
         />
       </div>
     </div>

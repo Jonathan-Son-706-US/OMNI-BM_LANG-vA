@@ -41,7 +41,7 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Scrollbar minimalista */
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
@@ -57,7 +57,7 @@ html, body, #root {
   background: #3c4943;
 }
 
-/* Contenedor principal todo en una ventana */
+/* Contenedor principal */
 .ide-container {
   display: flex;
   flex-direction: column;
@@ -67,7 +67,7 @@ html, body, #root {
   background-color: var(--bg-app);
 }
 
-/* Barra superior minimalista */
+/* Barra superior */
 .ide-navbar {
   height: 52px;
   min-height: 52px;
@@ -243,7 +243,7 @@ html, body, #root {
   font-weight: 600;
 }
 
-/* Área de trabajo de una sola ventana */
+/* Area de trabajo */
 .ide-workspace {
   flex: 1;
   display: flex;
@@ -262,7 +262,7 @@ html, body, #root {
   overflow: hidden;
 }
 
-/* Marca de agua centrada en el editor al 15% sin resplandor */
+/* Marca de agua editor */
 .editor-watermark {
   position: absolute;
   top: 55%;
@@ -297,7 +297,7 @@ html, body, #root {
   overflow: hidden;
 }
 
-/* Marca de agua centrada de fondo en las pestañas al 15% sin resplandor */
+/* Marca de agua salida */
 .output-watermark {
   position: absolute;
   top: 55%;
@@ -322,7 +322,7 @@ html, body, #root {
   object-fit: contain;
 }
 
-/* Barra de pestañas / cabecera de paneles */
+/* Cabecera de paneles */
 .panel-header {
   height: 38px;
   background-color: var(--bg-surface);
@@ -355,7 +355,7 @@ html, body, #root {
   background-color: #f59e0b;
 }
 
-/* Pestañas del panel derecho */
+/* Pestanas del panel de salida */
 .tab-list {
   display: flex;
   align-items: center;
@@ -389,7 +389,7 @@ html, body, #root {
   background-color: var(--bg-surface-elevated);
 }
 
-/* Editor con números de línea */
+/* Editor de codigo */
 .editor-wrapper {
   flex: 1;
   display: flex;
@@ -433,7 +433,7 @@ html, body, #root {
   z-index: 1;
 }
 
-/* Barra de estado inferior */
+/* Barra de estado */
 .status-bar {
   height: 26px;
   background-color: var(--bg-surface);
@@ -462,7 +462,7 @@ html, body, #root {
   color: var(--green-primary);
 }
 
-/* Panel de salida / contenido */
+/* Panel de salida */
 .output-content {
   flex: 1;
   overflow: auto;
@@ -539,7 +539,7 @@ html, body, #root {
   letter-spacing: 0.2px;
 }
 
-/* Barra inferior interactiva de stdin para sentencias READ */
+/* Barra de entrada stdin */
 .console-stdin-bar {
   display: flex;
   align-items: center;
@@ -569,7 +569,7 @@ html, body, #root {
   box-shadow: 0 0 8px var(--green-glow);
 }
 
-/* Modal minimalista de Integrantes */
+/* Ventana modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -675,7 +675,7 @@ html, body, #root {
   justify-content: flex-end;
 }
 
-/* Toast notificaciones discretas */
+/* Notificaciones toast */
 .toast-container {
   position: fixed;
   bottom: 38px;

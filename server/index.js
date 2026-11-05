@@ -1,3 +1,4 @@
+// Configuracion y dependencias
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -13,17 +14,15 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 app.use(cors());
 app.use(express.json());
 
-// Seguridad básica: evitar salir del directorio raíz
+// Validar ruta para restringir acceso al directorio raiz
 function getSafePath(filename) {
   const safeName = path.basename(filename);
   return path.join(ROOT_DIR, safeName);
 }
 
-// ------------------------------------------------------------------
-// INCISO 1: Abrir, Editar y Guardar archivos .bml
-// ------------------------------------------------------------------
+// Inciso 1: Gestion de archivos fuente (.bml)
 
-// Listar archivos .bml y .txt en el proyecto
+// Listar archivos del directorio
 app.get('/api/files', (req, res) => {
   try {
     const entries = fs.readdirSync(ROOT_DIR, { withFileTypes: true });
@@ -39,7 +38,7 @@ app.get('/api/files', (req, res) => {
   }
 });
 
-// Leer contenido de un archivo
+// Obtener contenido de un archivo
 app.get('/api/files/:filename', (req, res) => {
   try {
     const filePath = getSafePath(req.params.filename);
@@ -53,7 +52,7 @@ app.get('/api/files/:filename', (req, res) => {
   }
 });
 
-// Guardar archivo .bml
+// Guardar archivo en disco
 app.post('/api/files', (req, res) => {
   try {
     let { filename, content } = req.body;
@@ -71,9 +70,7 @@ app.post('/api/files', (req, res) => {
   }
 });
 
-// ------------------------------------------------------------------
-// INCISO 2: Generar Código Intermedio (TAC) mediante Tuberías
-// ------------------------------------------------------------------
+// Inciso 2: Generacion de codigo intermedio (TAC) mediante tuberias
 
 function buildCompilerIfNeeded() {
   return new Promise((resolve, reject) => {
@@ -100,7 +97,7 @@ app.post('/api/compile/tac', async (req, res) => {
 
     const compilerPath = await buildCompilerIfNeeded();
 
-    // Ejecución mediante tubería en Linux (child_process stdin pipe)
+    // Ejecutar compilador comunicando codigo por stdin
     const child = spawn(compilerPath, [], { cwd: ROOT_DIR });
 
     let stdoutData = '';
@@ -136,7 +133,7 @@ app.post('/api/compile/tac', async (req, res) => {
       }
     });
 
-    // Enviar código fuente por la tubería de entrada estándar (stdin)
+    // Enviar codigo fuente por stdin
     child.stdin.write(code);
     child.stdin.end();
   } catch (err) {
@@ -144,11 +141,9 @@ app.post('/api/compile/tac', async (req, res) => {
   }
 });
 
-// ------------------------------------------------------------------
-// INCISO 3: Generar Código Assembler NASM
-// ------------------------------------------------------------------
+// Inciso 3: Generacion de codigo ensamblador NASM
 
-// Compilar y obtener código ensamblador (salida.asm)
+// Compilar y leer salida.asm
 app.post('/api/compile/asm', async (req, res) => {
   try {
     const { code } = req.body;
@@ -194,7 +189,7 @@ app.post('/api/compile/asm', async (req, res) => {
       }
     });
 
-    // Enviar código por tubería al compilador
+    // Enviar codigo fuente por stdin
     child.stdin.write(code);
     child.stdin.end();
   } catch (err) {
@@ -202,7 +197,7 @@ app.post('/api/compile/asm', async (req, res) => {
   }
 });
 
-// Leer archivo salida.asm existente
+// Leer archivo salida.asm
 app.get('/api/compile/asm', (req, res) => {
   try {
     const asmPath = path.join(ROOT_DIR, 'salida.asm');
@@ -216,9 +211,7 @@ app.get('/api/compile/asm', (req, res) => {
   }
 });
 
-// ------------------------------------------------------------------
-// INCISO 4: Generar Código Ejecutable (NASM + LD)
-// ------------------------------------------------------------------
+// Inciso 4: Generacion de ejecutable con NASM y LD
 
 function executeCompilerPipe(code) {
   return new Promise(async (resolve, reject) => {
@@ -254,7 +247,7 @@ app.post('/api/compile/executable', async (req, res) => {
   try {
     const { code } = req.body;
 
-    // Si se envía código fuente, compilar primero a salida.asm mediante tubería
+    // Compilar a salida.asm si se envio codigo nuevo
     if (typeof code === 'string' && code.trim().length > 0) {
       try {
         await executeCompilerPipe(code);
@@ -274,7 +267,7 @@ app.post('/api/compile/executable', async (req, res) => {
       });
     }
 
-    // Paso 1: Ensamblar con NASM
+    // Ensamblar objeto con NASM
     exec('nasm -f elf32 salida.asm -o salida.o', { cwd: ROOT_DIR }, (nasmErr, nasmStdout, nasmStderr) => {
       if (nasmErr) {
         return res.status(500).json({
@@ -284,7 +277,7 @@ app.post('/api/compile/executable', async (req, res) => {
         });
       }
 
-      // Paso 2: Enlazar con LD (Linux 32-bit ELF)
+      // Enlazar ejecutable con LD
       exec('ld -m elf_i386 salida.o -o salida', { cwd: ROOT_DIR }, (ldErr, ldStdout, ldStderr) => {
         if (ldErr) {
           return res.status(500).json({
@@ -299,12 +292,12 @@ app.post('/api/compile/executable', async (req, res) => {
 
         const timestamp = new Date().toLocaleTimeString();
         const logs = [
-          `[${timestamp}] Iniciando generación de binario ejecutable...`,
-          `✓ [1/2] nasm -f elf32 salida.asm -o salida.o  (Ensamblado exitoso)`,
-          `✓ [2/2] ld -m elf_i386 salida.o -o salida       (Enlace ELF i386 exitoso)`,
+          `[${timestamp}] Iniciando generacion de binario ejecutable...`,
+          `[1/2] nasm -f elf32 salida.asm -o salida.o (Ensamblado exitoso)`,
+          `[2/2] ld -m elf_i386 salida.o -o salida (Enlace ELF i386 exitoso)`,
           `----------------------------------------------------------------`,
-          `➜ Archivo ejecutable creado: ./salida (32-bit Linux ELF)`,
-          `➜ El ejecutable está listo para correr en la pestaña Consola.`
+          `Archivo ejecutable creado: ./salida (ELF 32-bit)`,
+          `El ejecutable esta listo para su ejecucion.`
         ].join('\n');
 
         res.json({
@@ -321,9 +314,7 @@ app.post('/api/compile/executable', async (req, res) => {
   }
 });
 
-// ------------------------------------------------------------------
-// INCISO 5: Ejecutar el Binario Creado (./salida)
-// ------------------------------------------------------------------
+// Inciso 5: Ejecucion del binario generado
 
 function buildExecutable(code) {
   return new Promise(async (resolve, reject) => {
@@ -346,7 +337,7 @@ app.post('/api/run', async (req, res) => {
     const { input, code, autoBuild } = req.body;
     const binPath = path.join(ROOT_DIR, 'salida');
 
-    // Si no existe el binario o se solicita autoBuild
+    // Compilar binario si no existe
     if (!fs.existsSync(binPath) || autoBuild) {
       try {
         await buildExecutable(code);
@@ -365,7 +356,7 @@ app.post('/api/run', async (req, res) => {
     let stderrData = '';
     let isTerminated = false;
 
-    // Timeout de seguridad: 6 segundos para evitar procesos colgados
+    // Limite de tiempo de ejecucion
     const timer = setTimeout(() => {
       isTerminated = true;
       child.kill('SIGKILL');
@@ -393,7 +384,7 @@ app.post('/api/run', async (req, res) => {
           success: false,
           stdout: stdoutData,
           stderr: stderrData,
-          error: 'Tiempo límite excedido (Timeout 6s). El programa posiblemente está esperando datos en READ o entró en un ciclo infinito. Ingresa los números en el campo "Entrada (stdin)" y vuelve a presionar Ejecutar.',
+          error: 'Tiempo límite excedido (Timeout 6s). El programa posiblemente está esperando datos en READ o entró en un ciclo infinito.',
           exitCode: 124,
           executionTime,
         });
@@ -408,7 +399,7 @@ app.post('/api/run', async (req, res) => {
       });
     });
 
-    // Enviar valores de entrada a stdin para sentencias READ
+    // Enviar datos por stdin
     if (typeof input === 'string' && input.trim().length > 0) {
       const tokens = input.trim().split(/[\s,]+/).filter(Boolean);
       const formattedInput = tokens.join('\n') + '\n';
@@ -421,15 +412,13 @@ app.post('/api/run', async (req, res) => {
   }
 });
 
-// ------------------------------------------------------------------
-// WebSocket: Ejecución Interactiva en Tiempo Real con Pausa en READ
-// ------------------------------------------------------------------
+// Ejecucion interactiva mediante WebSocket
 
 function isWaitingForStdin(pid) {
   try {
     const syscall = fs.readFileSync(`/proc/${pid}/syscall`, 'utf8').trim();
     const parts = syscall.split(' ');
-    // Linux x86 sys_read es syscall 3, primer argumento es fd 0 (0x0 o 0)
+    // Verificar estado de lectura en stdin (syscall read)
     return parts[0] === '3' && (parts[1] === '0x0' || parts[1] === '0');
   } catch (e) {
     return false;
@@ -485,14 +474,14 @@ wss.on('connection', (ws) => {
       if (msg.type === 'start') {
         const { code } = msg;
 
-        // Extraer nombres de las variables en las instrucciones READ
+        // Obtener variables leidas en el codigo
         if (typeof code === 'string') {
           const matches = [...code.matchAll(/\bREAD\s+\$([a-zA-Z0-9_]+)/gi)];
           readVars = matches.map((m) => '$' + m[1]);
           readCount = readVars.length;
         }
 
-        // Compilar ejecutable si es necesario
+        // Compilar ejecutable
         try {
           await buildExecutable(code);
         } catch (buildErr) {
@@ -531,7 +520,7 @@ wss.on('connection', (ws) => {
           }));
         });
 
-        // Bucle de sondeo para detectar cuando ./salida entra en sys_read
+        // Sondeo de estado para detectar pausa en READ
         checkInterval = setInterval(() => {
           if (!child || child.killed) return;
           if (!isWaitingInput && isWaitingForStdin(child.pid)) {
@@ -567,9 +556,7 @@ wss.on('connection', (ws) => {
   ws.on('error', cleanup);
 });
 
-// ------------------------------------------------------------------
-// Healthcheck
-// ------------------------------------------------------------------
+// Estado del servidor
 app.get('/api/status', (req, res) => {
   res.json({ status: 'ok', service: 'OMNI-BM_LANG Server' });
 });

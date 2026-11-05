@@ -1,3 +1,4 @@
+// Modal para mostrar el listado de integrantes del proyecto
 import React from 'react';
 import { Users, X } from 'lucide-react';
 

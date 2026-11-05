@@ -1,3 +1,4 @@
+// Modal para capturar entradas por stdin al pausar en READ
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal, X, Play, CornerDownLeft, AlertOctagon } from 'lucide-react';
 
@@ -13,6 +14,7 @@ export default function StdinPromptModal({
   const [value, setValue] = useState('');
   const inputRef = useRef(null);
 
+  // Enfocar campo de texto al abrir modal
   useEffect(() => {
     if (isOpen) {
       setValue('');
@@ -26,6 +28,7 @@ export default function StdinPromptModal({
 
   if (!isOpen) return null;
 
+  // Enviar valor ingresado
   const handleSubmit = (e) => {
     if (e) e.preventDefault();
     if (!value.trim()) return;

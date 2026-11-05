@@ -17,37 +17,37 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [serverOnline, setServerOnline] = useState(true);
 
-  // Estados para Código Intermedio (Inciso 2)
+  // Estado para codigo intermedio
   const [tacOutput, setTacOutput] = useState('');
   const [tacError, setTacError] = useState('');
   const [isGeneratingTac, setIsGeneratingTac] = useState(false);
 
-  // Estados para Assembler NASM (Inciso 3)
+  // Estado para codigo ensamblador
   const [asmOutput, setAsmOutput] = useState('');
   const [asmError, setAsmError] = useState('');
   const [isGeneratingAsm, setIsGeneratingAsm] = useState(false);
 
-  // Estados para Ejecutable / Consola (Inciso 4 e Inciso 5)
+  // Estado para ejecutable y consola
   const [consoleOutput, setConsoleOutput] = useState('');
   const [consoleError, setConsoleError] = useState('');
   const [isAssembling, setIsAssembling] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [stdinInput, setStdinInput] = useState('');
 
-  // WebSocket y Ejecución Interactiva con Pausa en READ
+  // Conexion para ejecucion interactiva
   const wsRef = useRef(null);
   const [isStdinModalOpen, setIsStdinModalOpen] = useState(false);
   const [promptVarName, setPromptVarName] = useState('');
   const [promptReadIndex, setPromptReadIndex] = useState(1);
   const [promptTotalReads, setPromptTotalReads] = useState(1);
 
-  // Detección de sentencias READ en el código
+  // Conteo de instrucciones READ
   const readMatches = code.match(/\bREAD\b/gi) || [];
   const readCount = readMatches.length;
 
   const isModified = code !== savedCode;
 
-  // Mostrar notificación toast temporal
+  // Notificacion temporal
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => {
@@ -55,7 +55,7 @@ export default function App() {
     }, 3500);
   };
 
-  // Cargar lista de archivos del backend
+  // Obtener lista de archivos
   const fetchFiles = async () => {
     try {
       const res = await fetch('/api/files');
@@ -70,7 +70,7 @@ export default function App() {
     }
   };
 
-  // Cargar contenido de un archivo
+  // Cargar archivo seleccionado
   const loadFile = async (filename) => {
     try {
       const res = await fetch(`/api/files/${encodeURIComponent(filename)}`);
@@ -88,13 +88,13 @@ export default function App() {
     }
   };
 
-  // Inicializar: buscar archivos y cargar el primero (o test_a.bml)
+  // Carga inicial de archivos
   useEffect(() => {
     fetchFiles();
     loadFile('test_a.bml');
   }, []);
 
-  // Crear nuevo archivo .bml
+  // Crear nuevo archivo
   const handleNewFile = () => {
     const inputName = window.prompt(
       'Ingresa el nombre del nuevo archivo (con o sin extensión .bml):',
@@ -110,11 +110,11 @@ export default function App() {
     const template = `MAIN {\n    DEC $x, $y, $resultado;\n    $x => 15;\n    $y => 30;\n    $resultado => $x + $y;\n    WRITE $resultado;\n}\n`;
     setCurrentFilename(filename);
     setCode(template);
-    setSavedCode(''); // Se marca como modificado hasta guardar
+    setSavedCode('');
     showToast(`Nuevo archivo "${filename}" creado. Presiona Guardar para confirmar.`);
   };
 
-  // Guardar archivo actual en el servidor
+  // Guardar archivo actual
   const handleSaveFile = async () => {
     if (!currentFilename) return;
     setIsSaving(true);
@@ -142,7 +142,7 @@ export default function App() {
     }
   };
 
-  // Descargar archivo al equipo del usuario
+  // Descargar archivo localmente
   const handleDownloadFile = () => {
     const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -156,7 +156,7 @@ export default function App() {
     showToast(`Descargando "${currentFilename}"`);
   };
 
-  // Cargar archivo subido desde el equipo local
+  // Cargar archivo desde el equipo
   const handleUploadFile = (name, content) => {
     setCurrentFilename(name);
     setCode(content);
@@ -164,7 +164,7 @@ export default function App() {
     showToast(`Archivo "${name}" cargado desde tu equipo.`);
   };
 
-  // Generar Código Intermedio (TAC) mediante tuberías (Inciso 2)
+  // Generar codigo intermedio
   const handleGenerateTac = async () => {
     if (!code.trim()) {
       showToast('El editor está vacío', 'error');
@@ -196,7 +196,7 @@ export default function App() {
     }
   };
 
-  // Generar Código Assembler NASM (Inciso 3)
+  // Generar codigo ensamblador
   const handleGenerateAsm = async () => {
     if (!code.trim()) {
       showToast('El editor está vacío', 'error');
@@ -229,7 +229,7 @@ export default function App() {
     }
   };
 
-  // Ensamblar código ejecutable con NASM + LD (Inciso 4)
+  // Ensamblar y enlazar ejecutable
   const handleAssemble = async () => {
     if (!code.trim()) {
       showToast('El editor está vacío', 'error');
@@ -257,11 +257,11 @@ export default function App() {
     } catch (err) {
       showToast('Error de conexión al ensamblar', 'error');
     } finally {
-      setIsAssembling(false);
+      setIsGeneratingAsm(false);
     }
   };
 
-  // Ejecutar el binario ./salida de forma interactiva en tiempo real con WebSockets (Inciso 5)
+  // Ejecucion interactiva mediante WebSocket
   const handleInteractiveRun = () => {
     if (isRunning) return;
 
@@ -277,7 +277,7 @@ export default function App() {
     const startMsg = `\n[${timestamp}] Iniciando ejecución de ./salida...\n`;
     setConsoleOutput((prev) => (prev ? prev + startMsg : startMsg));
 
-    // Cerrar WebSocket anterior si existía
+    // Cerrar conexion previa
     if (wsRef.current) {
       try {
         wsRef.current.close();
@@ -305,15 +305,15 @@ export default function App() {
           setPromptReadIndex(msg.readIndex);
           setPromptTotalReads(msg.totalReads);
           setIsStdinModalOpen(true);
-          setConsoleOutput((prev) => prev + `[READ encontrado] El programa se pausó esperando ${msg.varName}...\n`);
+          setConsoleOutput((prev) => prev + `[READ] Esperando entrada para ${msg.varName}...\n`);
         } else if (msg.type === 'exit') {
           setIsRunning(false);
           setIsStdinModalOpen(false);
           let exitBanner = `----------------------------------------------------------------\n`;
           if (msg.cancelled) {
-            exitBanner += `⏹ Proceso detenido por el usuario.\n`;
+            exitBanner += `[Proceso detenido por el usuario]\n`;
           } else {
-            exitBanner += `✓ Finalizado exitosamente en ${msg.executionTime}s (exit code: ${msg.exitCode})\n`;
+            exitBanner += `[Proceso finalizado en ${msg.executionTime}s con codigo ${msg.exitCode}]\n`;
           }
           setConsoleOutput((prev) => (prev ? prev + exitBanner : exitBanner));
           setConsoleError('');
@@ -365,7 +365,7 @@ export default function App() {
 
   return (
     <div className="ide-container">
-      {/* Barra de navegación superior */}
+      {/* Barra de navegacion */}
       <Navbar
         currentFilename={currentFilename}
         onNewFile={handleNewFile}
@@ -387,7 +387,7 @@ export default function App() {
         isRunning={isRunning}
       />
 
-      {/* Espacio de trabajo en una sola ventana (Editor + Paneles de Salida) */}
+      {/* Espacio de trabajo principal */}
       <main className="ide-workspace">
         <EditorPanel
           filename={currentFilename}
@@ -420,7 +420,7 @@ export default function App() {
         />
       </main>
 
-      {/* Barra de estado inferior */}
+      {/* Barra de estado */}
       <footer className="status-bar">
         <div className="status-bar-left">
           <div className="status-item">
@@ -446,13 +446,13 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Modal de Integrantes */}
+      {/* Modal de integrantes */}
       <MembersModal
         isOpen={isMembersOpen}
         onClose={() => setIsMembersOpen(false)}
       />
 
-      {/* Modal para solicitar datos en tiempo real cuando encuentra READ */}
+      {/* Modal de entrada interactiva */}
       <StdinPromptModal
         isOpen={isStdinModalOpen}
         onClose={() => setIsStdinModalOpen(false)}
@@ -463,7 +463,7 @@ export default function App() {
         totalReads={promptTotalReads}
       />
 
-      {/* Notificaciones flotantes tipo Toast */}
+      {/* Mensajes de notificacion */}
       {toast && (
         <div className="toast-container">
           <div

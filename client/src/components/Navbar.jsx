@@ -37,7 +37,7 @@ export default function Navbar({
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Cerrar dropdown al hacer click afuera
+  // Cerrar menu al hacer clic fuera del componente
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -61,7 +61,7 @@ export default function Navbar({
 
   return (
     <header className="ide-navbar">
-      {/* Marca / Título con logo oficial */}
+      {/* Logo y titulo del proyecto */}
       <div className="nav-brand">
         <img
           src="/logo1.avif"
@@ -72,7 +72,7 @@ export default function Navbar({
         <span className="brand-badge">IDE vA</span>
       </div>
 
-      {/* Acciones principales: Archivos (Inciso 1) */}
+      {/* Operaciones de archivo */}
       <div className="nav-actions">
         <div className="btn-group">
           <button className="btn" onClick={onNewFile} title="Crear nuevo archivo .bml">
@@ -157,7 +157,7 @@ export default function Navbar({
           </button>
         </div>
 
-        {/* Input oculto para subir archivo desde el navegador */}
+        {/* Selector de archivo oculto */}
         <input
           type="file"
           ref={fileInputRef}
@@ -166,7 +166,7 @@ export default function Navbar({
           onChange={handleFileUpload}
         />
 
-        {/* Acciones de Compilación / Incisos */}
+        {/* Acciones de compilacion y ejecucion */}
         <div className="btn-group">
           <button
             className="btn btn-accent"
@@ -211,7 +211,7 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Lado derecho: Ventana de Integrantes */}
+      {/* Acceso a lista de integrantes */}
       <div>
         <button className="btn btn-accent" onClick={onOpenMembers} title="Ver integrantes del proyecto">
           <Users size={14} />

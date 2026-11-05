@@ -19,12 +19,12 @@ export default function OutputPanel({
 }) {
   return (
     <div className="output-section">
-      {/* Marca de agua de fondo con 15% de opacidad y sin resplandor centrada en las pestañas */}
+      {/* Logo de fondo */}
       <div className="output-watermark" aria-hidden="true">
         <img src="/logo1.avif" alt="Logo de fondo" />
       </div>
 
-      {/* Cabecera con pestañas */}
+      {/* Pestanas superiores */}
       <div className="panel-header" style={{ position: 'relative', zIndex: 2 }}>
         <div className="tab-list">
           <button
@@ -54,9 +54,9 @@ export default function OutputPanel({
         </div>
       </div>
 
-      {/* Contenido de cada pestaña con fondo transparente para dejar ver el logo de fondo */}
+      {/* Contenido de pestanas */}
       <div className="output-content" style={{ display: 'flex', flexDirection: 'column' }}>
-        {/* Pestaña: Código Intermedio (TAC) */}
+        {/* Pestana TAC */}
         {activeTab === 'tac' && (
           (tacOutput || tacError) ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -98,7 +98,7 @@ export default function OutputPanel({
           )
         )}
 
-        {/* Pestaña: Assembler NASM */}
+        {/* Pestana NASM */}
         {activeTab === 'asm' && (
           (asmOutput || asmError) ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -140,7 +140,7 @@ export default function OutputPanel({
           )
         )}
 
-        {/* Pestaña: Consola / Ejecución */}
+        {/* Pestana Consola */}
         {activeTab === 'console' && (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', flex: 1 }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
@@ -194,7 +194,7 @@ export default function OutputPanel({
               )}
             </div>
 
-            {/* Barra de entrada interactiva para stdin (sentencias READ) */}
+            {/* Entrada stdin */}
             <div className="console-stdin-bar">
               <span style={{ fontSize: '11px', color: 'var(--green-primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <span>stdin:</span>
