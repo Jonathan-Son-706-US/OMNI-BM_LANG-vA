@@ -1,0 +1,13 @@
+{
+  "name": "omni-bml-server",
+  "version": "1.0.0",
+  "description": "Backend para el IDE Web de OMNI-BM_LANG",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.1"
+  }
+}

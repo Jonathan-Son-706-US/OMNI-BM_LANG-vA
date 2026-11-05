@@ -1,0 +1,7 @@
+MAIN {
+    DEC $x, $y, $resultado;
+    $x => 15;
+    $y => 30;
+    $resultado => $x + $y;
+    WRITE $resultado;
+}

@@ -1,7 +1,9 @@
-*
-!proyecto.l
-!proyecto.y
-!.gitignore
-!entrada.txt
-!entrada2.txt
-!test_a.bml
+node_modules/
+dist/
+*.o
+*.asm
+salida
+lex.yy.c
+proyecto.tab.c
+proyecto.tab.h
+.DS_Store
