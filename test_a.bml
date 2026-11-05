@@ -1,27 +1,93 @@
+MAIN {
+    DEC $x, $y, $z;
+    
+    $x => 10;
+    $y => 20;
+    $z => 30;
+    
+    #! Ejemplo de if anidado !#
+    IF ($x < -90) {
+        IF ($y < $z) {
+            $z =>$x --5;
+        } ELSE {
+            $z => -5;
+        }
+    } ELSE {
+        $z => 0;
+    }
+    
+    WRITE $z;
+}
+MAIN{
+  DEC $x,$y,$z;
+  READ $x;
+  READ $y;
+  $z=>1+$x;
+  IF($x<$y){
+    $z=>$x+$y;
+  }
+  ELSE
+  {
+    $z=>0;
+  }
+ WRITE $z;
+}
+
 #! comentario !#
 
 MAIN{
-  DEC $x,$y,$total, $i;
-  
-  WHILE($x < 25 && $x >0){
-	  $total => $total + 1;
-  }
-  
-  FOR(   $i=>0;$i<10; $i=>$i+1){
-    $total => $total + $i;
-    $z => $total * 1 + $x:3;
-  }
-  
-  IF($x<$y){
-    $z=>$x+$y;
-	IF($x<10){
-    		$z=>$z+1;
-	}
-  }ELSE{
-    $z=>0;
-  }
+  DEC $a,$b;
+  READ $b;
+  $a=>1+2+$b;
+  WRITE $a;
+}
 
-  WRITE $z;
-  WRITE $total;
-  
+MAIN {
+    DEC $x, $y;
+    $x => 10;
+    $y => 20;
+
+    #! Comentario de prueba !#
+    IF ($x < 15 && $y > 10) {
+        IF ($x == 10) {
+            $x => 50;
+        } ELSE {
+            $x => 0;
+        }
+    }
+}
+
+#! Pruebas !#
+MAIN {
+    DEC $a, $b, $c, $total, $i;
+    
+    #! Lectura y asignación básica !#
+    READ $b;
+    READ $c;
+    $a => 1 + 2 * $b;
+    
+    $total => $c : 2;  
+    IF ($total < 25 && $b > 0 || $a == 10) {
+        IF ($total <> 5) {
+            $total => $total + -1;
+        } ELSE {
+            $total => 0;
+        }
+    } ELSE {
+        $total => 100;
+    }
+    WHILE ($total > 50 && $i < 5) {
+        $total => $total - 5;
+        $i => $i + 1;
+    }
+    FOR ($i => 0; $i < 10; $i => $i+1) {
+        $total => $total + 2;
+    }
+    
+    WRITE $total;
+}
+MAIN {
+    DEC $x;
+    $x =>10;  
+    WRITE $x;
 }
