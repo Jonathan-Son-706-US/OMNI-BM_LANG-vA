@@ -5,8 +5,8 @@ git clone https://github.com/tu-usuario/ProyectoCompiladores.git
 
 @Shoniro: Somos clave
 
-# Comandos de ejecucion
-
+# Comandos de ejecucion u dependencias del proyecto OMNI-BM_LANG-vA
+pip install -r requirements.txt
 # Instalacion de requirements
 pip install requirements.txt
 # Backend
