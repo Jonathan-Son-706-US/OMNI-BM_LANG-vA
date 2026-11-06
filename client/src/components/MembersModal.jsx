@@ -7,8 +7,8 @@ export default function MembersModal({ isOpen, onClose }) {
 
   const integrantes = [
     { nombre: 'Abner Esaú Ambrocio Lima', carne: '202408028' },
-    { nombre: 'Diego Jonathan Utuc Son', carne: '202408047' },
-    { nombre: 'Jair Michael Otoniel Castillo Valdez', carne: '202408014' },
+    { nombre: 'Diego Jonathan Utuc Son', carne: '202408014' },
+    { nombre: 'Jair Michael Otoniel Castillo Valdez', carne: '202408047' },
     { nombre: 'Diego Javier Jiménez Pineda', carne: '202408026' },
   ];
 
