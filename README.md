@@ -1,4 +1,20 @@
 # OMNI-BM_LANG-vA
 Proyecto Final para el Curso de Compiladores I, para la creación de un compilador para un lenguaje de alto nivel  
-@Jonas: solo jalenlo el .gitignore evita subir el codigo c generado de por medio
+@Jonas: solo talenlo el .gitignore evita subir el codigo c generado de por medio
 git clone https://github.com/tu-usuario/ProyectoCompiladores.git
+
+@Shoniro: Somos clave
+
+# Comandos de ejecucion
+
+# Instalacion de requirements
+pip install requirements.txt
+# Backend
+cd server
+npm install
+npm start
+
+# Frontend
+cd client
+npm install
+npm run dev
